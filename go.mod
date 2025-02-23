@@ -2,7 +2,6 @@ module github.com/mailstepcz/keyvalue
 
 go 1.23.0
 
-
 require (
 	github.com/google/uuid v1.6.0
 	github.com/mailstepcz/enums v0.1.2
@@ -14,7 +13,7 @@ require (
 	github.com/mailstepcz/types v0.1.4
 	github.com/mailstepcz/validate v0.1.4
 	github.com/oklog/ulid/v2 v2.1.0
-	github.com/rickb777/date/v2 v2.1.6
+	github.com/rickb777/date/v2 v2.1.7
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/text v0.22.0
@@ -29,7 +28,6 @@ require (
 	github.com/govalues/decimal v0.1.36 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rickb777/date/v2 v2.1.7 // indirect
 	github.com/rickb777/period v1.0.9 // indirect
 	github.com/rickb777/plural v1.4.2 // indirect
 	golang.org/x/sys v0.30.0 // indirect
