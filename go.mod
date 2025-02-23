@@ -14,6 +14,7 @@ require (
 	github.com/mailstepcz/types v0.1.4
 	github.com/mailstepcz/validate v0.1.4
 	github.com/oklog/ulid/v2 v2.1.0
+	github.com/rickb777/date/v2 v2.1.6
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/text v0.22.0

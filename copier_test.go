@@ -16,6 +16,7 @@ import (
 	"github.com/mailstepcz/pointer"
 	"github.com/mailstepcz/validate"
 	"github.com/oklog/ulid/v2"
+	"github.com/rickb777/date/v2"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/language"
@@ -135,6 +136,9 @@ type copierDst1 struct {
 	DM1   maybe.Maybe[decimal.Decimal]
 	DM2   *string
 	TS7   *timestamppb.Timestamp
+	D3    date.Date
+	D4    *timestamppb.Timestamp
+	D5    maybe.Maybe[date.Date]
 }
 
 type copierSrc1 struct {
@@ -176,6 +180,9 @@ type copierSrc1 struct {
 	DM1     *string
 	DM2     maybe.Maybe[decimal.Decimal]
 	TS7     maybe.Maybe[time.Time]
+	D3      *timestamppb.Timestamp
+	D4      date.Date
+	D5      *timestamppb.Timestamp
 }
 
 func (x *copierSrc1) toDst() (*copierDst1, error) {
@@ -307,6 +314,8 @@ func (x *copierSrc1) toDst() (*copierDst1, error) {
 		TS6:   ts6,
 		DM1:   dm1,
 		DM2:   dm2,
+		D3:    date.NewAt(time.Now()),
+		D4:    timestamppb.Now(),
 	}, nil
 }
 
@@ -750,6 +759,9 @@ func TestCopierCreationSuccess(t *testing.T) {
 		DM1: &dm1,
 		DM2: maybe.Unit(decimal.New(5678, -2)),
 		TS7: maybe.Nothing[time.Time](),
+		D3:  timestamppb.Now(),
+		D4:  date.Today(),
+		D5:  timestamppb.Now(),
 	}))
 	req.Nil(err)
 
@@ -791,6 +803,9 @@ func TestCopierCreationSuccess(t *testing.T) {
 	req.Equal(decimal.New(1234, -2), dst.DM1.Val)
 	req.Equal("56.78", *dst.DM2)
 	req.Nil(dst.TS7)
+	req.Equal(date.Today(), dst.D3)
+	req.Equal(timestamppb.New(time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)), dst.D4)
+	req.Equal(date.New(time.Now().Year(), time.Now().Month(), time.Now().Day()), dst.D5.Val)
 }
 
 func TestNativeCopyCreationSuccess(t *testing.T) {
