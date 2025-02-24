@@ -20,6 +20,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/language"
+	protoDate "google.golang.org/genproto/googleapis/type/date"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	jinzhu "gopkg.in/jinzhu/copier.v0"
 )
@@ -139,6 +140,7 @@ type copierDst1 struct {
 	D3    date.Date
 	D4    *timestamppb.Timestamp
 	D5    maybe.Maybe[date.Date]
+	D6    date.Date
 }
 
 type copierSrc1 struct {
@@ -183,6 +185,7 @@ type copierSrc1 struct {
 	D3      *timestamppb.Timestamp
 	D4      date.Date
 	D5      *timestamppb.Timestamp
+	D6      protoDate.Date
 }
 
 func (x *copierSrc1) toDst() (*copierDst1, error) {
@@ -762,6 +765,7 @@ func TestCopierCreationSuccess(t *testing.T) {
 		D3:  timestamppb.Now(),
 		D4:  date.Today(),
 		D5:  timestamppb.Now(),
+		D6:  protoDate.Date{Year: 2024, Month: 04, Day: 04},
 	}))
 	req.Nil(err)
 
@@ -806,6 +810,7 @@ func TestCopierCreationSuccess(t *testing.T) {
 	req.Equal(date.Today(), dst.D3)
 	req.Equal(timestamppb.New(time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)), dst.D4)
 	req.Equal(date.New(time.Now().Year(), time.Now().Month(), time.Now().Day()), dst.D5.Val)
+	req.Equal(date.New(2024, 04, 04), dst.D6)
 }
 
 func TestNativeCopyCreationSuccess(t *testing.T) {
