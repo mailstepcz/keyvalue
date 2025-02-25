@@ -1,6 +1,8 @@
 module github.com/mailstepcz/keyvalue
 
-go 1.22.0
+go 1.23.0
+
+toolchain go1.24.0
 
 require (
 	github.com/google/uuid v1.6.0
@@ -10,7 +12,7 @@ require (
 	github.com/mailstepcz/pointer v0.1.1
 	github.com/mailstepcz/serr v0.1.3
 	github.com/mailstepcz/slice v0.1.0
-	github.com/mailstepcz/types v0.1.3
+	github.com/mailstepcz/types v0.1.6
 	github.com/mailstepcz/validate v0.1.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/rickb777/date/v2 v2.1.6
@@ -31,6 +33,7 @@ require (
 	github.com/rickb777/period v1.0.8 // indirect
 	github.com/rickb777/plural v1.4.2 // indirect
 	golang.org/x/sys v0.30.0 // indirect
+	google.golang.org/genproto v0.0.0-20250219182151-9fdb1cabc7b2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250212204824-5a70512c5d8b // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

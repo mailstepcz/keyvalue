@@ -24,6 +24,7 @@ import (
 	"github.com/rickb777/date/v2"
 	"github.com/shopspring/decimal"
 	"golang.org/x/text/language"
+	protoDate "google.golang.org/genproto/googleapis/type/date"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -225,6 +226,14 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 		return func(dst, src unsafe.Pointer) error {
 			t := *(*time.Time)(src)
 			*(**timestamppb.Timestamp)(dst) = timestamppb.New(t)
+			return nil
+		}, nil
+
+	case srcType == types.ProtoDate && dstType == types.Date:
+		return func(dst, src unsafe.Pointer) error {
+			d := *(*protoDate.Date)(src)
+			*(*date.Date)(dst) = date.New(int(d.Year), time.Month(d.Month), int(d.Day))
+
 			return nil
 		}, nil
 
