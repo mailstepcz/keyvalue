@@ -12,7 +12,7 @@ require (
 	github.com/mailstepcz/pointer v0.1.1
 	github.com/mailstepcz/serr v0.1.5
 	github.com/mailstepcz/slice v0.1.0
-	github.com/mailstepcz/types v0.1.7
+	github.com/mailstepcz/types v0.1.8
 	github.com/mailstepcz/validate v0.1.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/rickb777/date/v2 v2.1.6

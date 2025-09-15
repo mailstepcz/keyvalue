@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mailstepcz/enums"
+	test "github.com/mailstepcz/keyvalue/proto"
 	"github.com/mailstepcz/maybe"
 	"github.com/mailstepcz/pointer"
 	"github.com/mailstepcz/validate"
@@ -1466,6 +1467,187 @@ func TestStructFromMap(t *testing.T) {
 	err := Copy(&dst, &src)
 	req.NoError(err)
 	req.Equal(p{S: "abcd", N: 1234}, dst.X)
+}
+
+type PhoneTypeEnum enums.String
+
+var (
+	PhoneTypeMobile   PhoneTypeEnum = "PHONE_TYPE_MOBILE"
+	PhoneTypeHardline PhoneTypeEnum = "PHONE_TYPE_HARD_LINE"
+)
+
+var phoneTypeEnum = enums.NewClosedEnum(PhoneTypeMobile, PhoneTypeHardline)
+
+func (e PhoneTypeEnum) DefaultValue() string {
+	return string(phoneTypeEnum.DefaultValue())
+}
+
+func (e PhoneTypeEnum) Value() (driver.Value, error) {
+	return string(e), nil
+}
+
+func (e PhoneTypeEnum) EnumValueIsValid() bool {
+	_, ok := enums.EnumGet[PhoneTypeEnum](&phoneTypeEnum, string(e))
+	return ok
+}
+
+var _ enums.ClosedEnum = (*PhoneTypeEnum)(nil)
+
+func TestProtoEnums(t *testing.T) {
+	req := require.New(t)
+
+	type src struct {
+		Phone1 string
+		Phone2 test.PhoneType
+		Phone3 PhoneTypeEnum
+		Phone4 test.PhoneType
+		Phone5 maybe.Maybe[string]
+		Phone6 *test.PhoneType
+		Phone7 maybe.Maybe[PhoneTypeEnum]
+		Phone8 *test.PhoneType
+	}
+
+	type dst struct {
+		Phone1 test.PhoneType
+		Phone2 string
+		Phone3 test.PhoneType
+		Phone4 PhoneTypeEnum
+		Phone5 *test.PhoneType
+		Phone6 maybe.Maybe[string]
+		Phone7 *test.PhoneType
+		Phone8 maybe.Maybe[PhoneTypeEnum]
+	}
+
+	c, err := TypedCopierForPair[dst, src]()
+	req.NoError(err)
+	copy := Cast(c)
+	t.Run("known enum values", func(t *testing.T) {
+		req := require.New(t)
+
+		s := src{
+			Phone1: "PHONE_TYPE_MOBILE",
+			Phone2: test.PhoneType_PHONE_TYPE_HARD_LINE,
+			Phone3: PhoneTypeHardline,
+			Phone4: test.PhoneType_PHONE_TYPE_MOBILE,
+			Phone5: maybe.Unit("PHONE_TYPE_MOBILE"),
+			Phone6: pointer.To(test.PhoneType_PHONE_TYPE_MOBILE),
+			Phone7: maybe.Unit(PhoneTypeHardline),
+			Phone8: pointer.To(test.PhoneType_PHONE_TYPE_HARD_LINE),
+		}
+		d, err := copy.CopyPtr(&s)
+		req.NoError(err)
+
+		req.Equal(test.PhoneType_PHONE_TYPE_MOBILE, d.Phone1)
+		req.Equal("PHONE_TYPE_HARD_LINE", d.Phone2)
+		req.Equal(test.PhoneType_PHONE_TYPE_HARD_LINE, d.Phone3)
+		req.Equal(PhoneTypeMobile, d.Phone4)
+		req.NotNil(d.Phone5)
+		req.Equal(test.PhoneType_PHONE_TYPE_MOBILE, *d.Phone5)
+		req.True(d.Phone6.Valid)
+		req.Equal("PHONE_TYPE_MOBILE", d.Phone6.Val)
+		req.NotNil(d.Phone7)
+		req.Equal(test.PhoneType_PHONE_TYPE_HARD_LINE, *d.Phone7)
+		req.True(d.Phone8.Valid)
+		req.Equal(PhoneTypeHardline, d.Phone8.Val)
+	})
+
+	t.Run("without optional values", func(t *testing.T) {
+		req := require.New(t)
+		s := src{
+			Phone1: "PHONE_TYPE_MOBILE",
+			Phone2: test.PhoneType_PHONE_TYPE_HARD_LINE,
+			Phone3: PhoneTypeHardline,
+			Phone4: test.PhoneType_PHONE_TYPE_MOBILE,
+			Phone5: maybe.Nothing[string](),
+			Phone6: nil,
+			Phone7: maybe.Nothing[PhoneTypeEnum](),
+			Phone8: nil,
+		}
+
+		d, err := copy.CopyPtr(&s)
+		req.NoError(err)
+
+		req.Nil(d.Phone5)
+		req.False(d.Phone6.Valid)
+		req.Nil(d.Phone7)
+		req.False(d.Phone8.Valid)
+	})
+
+	t.Run("unknown enum values", func(t *testing.T) {
+		t.Run("string value not present in proto enum (phone1)", func(t *testing.T) {
+			req := require.New(t)
+			s := src{
+				Phone1: "INVALID_VALUE",
+				Phone2: test.PhoneType_PHONE_TYPE_HARD_LINE,
+				Phone3: PhoneTypeHardline,
+				Phone4: test.PhoneType_PHONE_TYPE_HARD_LINE,
+				Phone5: maybe.Nothing[string](),
+				Phone6: nil,
+				Phone7: maybe.Nothing[PhoneTypeEnum](),
+				Phone8: nil,
+			}
+
+			_, err := copy.CopyPtr(&s)
+			req.Error(err)
+			req.Contains(err.Error(), "invalid enum value, value is not present in proto enum givenValue=INVALID_VALUE")
+		})
+
+		t.Run("proto enum value out of range (phone2) to string  - should fail, value cannot be converted to string", func(t *testing.T) {
+			req := require.New(t)
+			s := src{
+				Phone1: "PHONE_TYPE_HARD_LINE",
+				Phone2: 420,
+				Phone3: PhoneTypeHardline,
+				Phone4: test.PhoneType_PHONE_TYPE_HARD_LINE,
+				Phone5: maybe.Nothing[string](),
+				Phone6: nil,
+				Phone7: maybe.Nothing[PhoneTypeEnum](),
+				Phone8: nil,
+			}
+
+			_, err := copy.CopyPtr(&s)
+			req.Error(err)
+			req.Contains(err.Error(), "invalid enum value, int value is not present in proto enum givenValue=420")
+		})
+
+		t.Run("invalid closed enum value to proto enum (phone3)", func(t *testing.T) {
+			req := require.New(t)
+			s := src{
+				Phone1: "PHONE_TYPE_HARD_LINE",
+				Phone2: test.PhoneType_PHONE_TYPE_HARD_LINE,
+				Phone3: PhoneTypeEnum("INVALID_VALUE"),
+				Phone4: test.PhoneType_PHONE_TYPE_HARD_LINE,
+				Phone5: maybe.Nothing[string](),
+				Phone6: nil,
+				Phone7: maybe.Nothing[PhoneTypeEnum](),
+				Phone8: nil,
+			}
+
+			_, err := copy.CopyPtr(&s)
+			req.Error(err)
+			req.Contains(err.Error(), "invalid enum value, value is not present in proto enum givenValue=INVALID_VALUE")
+		})
+
+		t.Run("proto enum value not present in closed enum (phone 4)", func(t *testing.T) {
+			req := require.New(t)
+			s := src{
+				Phone1: "PHONE_TYPE_HARD_LINE",
+				Phone2: test.PhoneType_PHONE_TYPE_HARD_LINE,
+				Phone3: PhoneTypeHardline,
+				Phone4: test.PhoneType_PHONE_TYPE_SATELITE,
+				Phone5: maybe.Nothing[string](),
+				Phone6: nil,
+				Phone7: maybe.Nothing[PhoneTypeEnum](),
+				Phone8: nil,
+			}
+
+			_, err := copy.CopyPtr(&s)
+			req.Error(err)
+			req.Contains(err.Error(), "bad value for closed enum value=PHONE_TYPE_SATELITE dstType=PhoneTypeEnum")
+		})
+
+	})
+
 }
 
 type struct1 struct {

@@ -26,8 +26,8 @@ github.com/mailstepcz/serr v0.1.5 h1:TtAq0wgHrcazrtuwN3PzFeM5LTesD6VMnzDFHeKRglc
 github.com/mailstepcz/serr v0.1.5/go.mod h1:IETMp2oapGfjz2deDjojaj075vPKjoF4TE3GVjsd9sk=
 github.com/mailstepcz/slice v0.1.0 h1:hL2GTbi1hJB9ujWlDxQEGfpiyJvqYnin+6HCydFSwFo=
 github.com/mailstepcz/slice v0.1.0/go.mod h1:it8NBpr6Vm76AVvau+DNHJOwsPtQM9FnrzIX2IwfFIA=
-github.com/mailstepcz/types v0.1.7 h1:mxdPqf1DFjCnt4kAMlzUEylm6J0P5UPPU1fTJQ7CtXA=
-github.com/mailstepcz/types v0.1.7/go.mod h1:orQjNWxM3CM7equX+Dl2M/Vp0OXDW5gUDeKUhikLXlM=
+github.com/mailstepcz/types v0.1.8 h1:sCz/cIqYjNSFvywPu/nQdJlxKLKAzRQh+wbaLezMrgY=
+github.com/mailstepcz/types v0.1.8/go.mod h1:orQjNWxM3CM7equX+Dl2M/Vp0OXDW5gUDeKUhikLXlM=
 github.com/mailstepcz/validate v0.1.0 h1:rWIEwkSXNp7u3Wz12tX/YwSvNntJFsAMhnz6GZsfzAQ=
 github.com/mailstepcz/validate v0.1.0/go.mod h1:otDBiH7M7jJwLxLJFYMKD9H5L1Hvg0LRvVgFhBuPLaI=
 github.com/oklog/ulid/v2 v2.1.0 h1:+9lhoxAP56we25tyYETBBY1YLA2SaoLvUFgrP2miPJU=

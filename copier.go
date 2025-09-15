@@ -25,6 +25,7 @@ import (
 	"github.com/shopspring/decimal"
 	"golang.org/x/text/language"
 	protoDate "google.golang.org/genproto/googleapis/type/date"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -204,6 +205,55 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 			return nil
 		}, nil
 
+	case srcType.Kind() == reflect.String && dstType.Kind() == reflect.Int32 && dstType.Implements(types.ProtoEnum):
+		enumValues := reflect.New(dstType).Interface().(protoreflect.Enum).Descriptor().Values()
+		return func(dst, src unsafe.Pointer) error {
+			x := (*string)(src)
+			ev := enumValues.ByName(protoreflect.Name(*x))
+			if ev == nil {
+				return serr.New("invalid enum value, value is not present in proto enum", serr.String("givenValue", *x))
+			}
+
+			y := (*int32)(dst)
+			*y = int32(ev.Number())
+
+			return nil
+		}, nil
+	case dstType.Kind() == reflect.String && dstType.Implements(types.ClosedEnum) && srcType.Kind() == reflect.Int32 && srcType.Implements(types.ProtoEnum):
+		enumValues := reflect.New(srcType).Interface().(protoreflect.Enum).Descriptor().Values()
+		validator := func(x string) error {
+			e := reflect.ValueOf(x).Convert(dstType).Interface().(enums.ClosedEnum)
+			if e.EnumValueIsValid() {
+				return nil
+			}
+			return serr.New("bad value for closed enum", serr.String("value", x), serr.String("dstType", dstType.Name()))
+		}
+		return func(dst, src unsafe.Pointer) error {
+			x := (*protoreflect.EnumNumber)(src)
+			ev := enumValues.ByNumber(*x)
+			if ev == nil {
+				return serr.New("invalid enum value, int value is not present in proto enum", serr.Int("givenValue", int(*x)))
+			}
+			name := string(ev.Name())
+			if err := validator(name); err != nil {
+				return err
+			}
+			y := (*string)(dst)
+			*y = name
+			return nil
+		}, nil
+	case dstType.Kind() == reflect.String && srcType.Kind() == reflect.Int32 && srcType.Implements(types.ProtoEnum):
+		enumValues := reflect.New(srcType).Interface().(protoreflect.Enum).Descriptor().Values()
+		return func(dst, src unsafe.Pointer) error {
+			x := (*protoreflect.EnumNumber)(src)
+			ev := enumValues.ByNumber(*x)
+			if ev == nil {
+				return serr.New("invalid enum value, int value is not present in proto enum", serr.Int("givenValue", int(*x)))
+			}
+			y := (*string)(dst)
+			*y = string(ev.Name())
+			return nil
+		}, nil
 	case srcPtrType.ConvertibleTo(dstPtrType):
 		return func(dst, src unsafe.Pointer) error {
 			converted := reflect.NewAt(srcType, src).Convert(dstPtrType)
