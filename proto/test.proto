@@ -8,3 +8,4 @@ enum PhoneType {
     PHONE_TYPE_HARD_LINE = 2;
     PHONE_TYPE_SATELITE = 3;
 }
+

@@ -207,21 +207,15 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 
 	case srcType.Kind() == reflect.String && dstType.Kind() == reflect.Int32 && dstType.Implements(types.ProtoEnum):
 		enumValues := reflect.New(dstType).Interface().(protoreflect.Enum).Descriptor().Values()
-		unknownValue := enumValues.ByNumber(0)
-
 		return func(dst, src unsafe.Pointer) error {
 			x := (*string)(src)
 			ev := enumValues.ByName(protoreflect.Name(*x))
-			if ev == nil && unknownValue == nil {
-				return serr.New("invalid enum value, value is not present in proto enum, and unknown value is not set", serr.String("givenValue", *x))
+			if ev == nil {
+				return serr.New("invalid enum value, value is not present in proto enum", serr.String("givenValue", *x))
 			}
 
 			y := (*int32)(dst)
-			if ev == nil {
-				*y = int32(unknownValue.Number())
-			} else {
-				*y = int32(ev.Number())
-			}
+			*y = int32(ev.Number())
 
 			return nil
 		}, nil

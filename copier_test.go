@@ -1501,6 +1501,10 @@ func TestProtoEnums(t *testing.T) {
 		Phone2 test.PhoneType
 		Phone3 PhoneTypeEnum
 		Phone4 test.PhoneType
+		Phone5 maybe.Maybe[string]
+		Phone6 *test.PhoneType
+		Phone7 maybe.Maybe[PhoneTypeEnum]
+		Phone8 *test.PhoneType
 	}
 
 	type dst struct {
@@ -1508,6 +1512,10 @@ func TestProtoEnums(t *testing.T) {
 		Phone2 string
 		Phone3 test.PhoneType
 		Phone4 PhoneTypeEnum
+		Phone5 *test.PhoneType
+		Phone6 maybe.Maybe[string]
+		Phone7 *test.PhoneType
+		Phone8 maybe.Maybe[PhoneTypeEnum]
 	}
 
 	c, err := TypedCopierForPair[dst, src]()
@@ -1521,6 +1529,10 @@ func TestProtoEnums(t *testing.T) {
 			Phone2: test.PhoneType_PHONE_TYPE_HARD_LINE,
 			Phone3: PhoneTypeHardline,
 			Phone4: test.PhoneType_PHONE_TYPE_MOBILE,
+			Phone5: maybe.Unit("PHONE_TYPE_MOBILE"),
+			Phone6: pointer.To(test.PhoneType_PHONE_TYPE_MOBILE),
+			Phone7: maybe.Unit(PhoneTypeHardline),
+			Phone8: pointer.To(test.PhoneType_PHONE_TYPE_HARD_LINE),
 		}
 		d, err := copy.CopyPtr(&s)
 		req.NoError(err)
@@ -1529,21 +1541,55 @@ func TestProtoEnums(t *testing.T) {
 		req.Equal("PHONE_TYPE_HARD_LINE", d.Phone2)
 		req.Equal(test.PhoneType_PHONE_TYPE_HARD_LINE, d.Phone3)
 		req.Equal(PhoneTypeMobile, d.Phone4)
+		req.NotNil(d.Phone5)
+		req.Equal(test.PhoneType_PHONE_TYPE_MOBILE, *d.Phone5)
+		req.True(d.Phone6.Valid)
+		req.Equal("PHONE_TYPE_MOBILE", d.Phone6.Val)
+		req.NotNil(d.Phone7)
+		req.Equal(test.PhoneType_PHONE_TYPE_HARD_LINE, *d.Phone7)
+		req.True(d.Phone8.Valid)
+		req.Equal(PhoneTypeHardline, d.Phone8.Val)
+	})
+
+	t.Run("without optional values", func(t *testing.T) {
+		req := require.New(t)
+		s := src{
+			Phone1: "PHONE_TYPE_MOBILE",
+			Phone2: test.PhoneType_PHONE_TYPE_HARD_LINE,
+			Phone3: PhoneTypeHardline,
+			Phone4: test.PhoneType_PHONE_TYPE_MOBILE,
+			Phone5: maybe.Nothing[string](),
+			Phone6: nil,
+			Phone7: maybe.Nothing[PhoneTypeEnum](),
+			Phone8: nil,
+		}
+
+		d, err := copy.CopyPtr(&s)
+		req.NoError(err)
+
+		req.Nil(d.Phone5)
+		req.False(d.Phone6.Valid)
+		req.Nil(d.Phone7)
+		req.False(d.Phone8.Valid)
 	})
 
 	t.Run("unknown enum values", func(t *testing.T) {
 		t.Run("string value not present in proto enum (phone1)", func(t *testing.T) {
 			req := require.New(t)
 			s := src{
-				Phone1: "ASD",
+				Phone1: "INVALID_VALUE",
 				Phone2: test.PhoneType_PHONE_TYPE_HARD_LINE,
 				Phone3: PhoneTypeHardline,
 				Phone4: test.PhoneType_PHONE_TYPE_HARD_LINE,
+				Phone5: maybe.Nothing[string](),
+				Phone6: nil,
+				Phone7: maybe.Nothing[PhoneTypeEnum](),
+				Phone8: nil,
 			}
 
-			d, err := copy.CopyPtr(&s)
-			req.NoError(err)
-			req.Equal(test.PhoneType_PHONE_TYPE_UNKNOWN, d.Phone1)
+			_, err := copy.CopyPtr(&s)
+			req.Error(err)
+			req.Contains(err.Error(), "invalid enum value, value is not present in proto enum givenValue=INVALID_VALUE")
 		})
 
 		t.Run("proto enum value out of range (phone2) to string  - should fail, value cannot be converted to string", func(t *testing.T) {
@@ -1553,6 +1599,10 @@ func TestProtoEnums(t *testing.T) {
 				Phone2: 420,
 				Phone3: PhoneTypeHardline,
 				Phone4: test.PhoneType_PHONE_TYPE_HARD_LINE,
+				Phone5: maybe.Nothing[string](),
+				Phone6: nil,
+				Phone7: maybe.Nothing[PhoneTypeEnum](),
+				Phone8: nil,
 			}
 
 			_, err := copy.CopyPtr(&s)
@@ -1567,11 +1617,15 @@ func TestProtoEnums(t *testing.T) {
 				Phone2: test.PhoneType_PHONE_TYPE_HARD_LINE,
 				Phone3: PhoneTypeEnum("INVALID_VALUE"),
 				Phone4: test.PhoneType_PHONE_TYPE_HARD_LINE,
+				Phone5: maybe.Nothing[string](),
+				Phone6: nil,
+				Phone7: maybe.Nothing[PhoneTypeEnum](),
+				Phone8: nil,
 			}
 
-			d, err := copy.CopyPtr(&s)
-			req.NoError(err)
-			req.Equal(test.PhoneType_PHONE_TYPE_UNKNOWN, d.Phone3)
+			_, err := copy.CopyPtr(&s)
+			req.Error(err)
+			req.Contains(err.Error(), "invalid enum value, value is not present in proto enum givenValue=INVALID_VALUE")
 		})
 
 		t.Run("proto enum value not present in closed enum (phone 4)", func(t *testing.T) {
@@ -1581,6 +1635,10 @@ func TestProtoEnums(t *testing.T) {
 				Phone2: test.PhoneType_PHONE_TYPE_HARD_LINE,
 				Phone3: PhoneTypeHardline,
 				Phone4: test.PhoneType_PHONE_TYPE_SATELITE,
+				Phone5: maybe.Nothing[string](),
+				Phone6: nil,
+				Phone7: maybe.Nothing[PhoneTypeEnum](),
+				Phone8: nil,
 			}
 
 			_, err := copy.CopyPtr(&s)
