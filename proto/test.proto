@@ -1,0 +1,10 @@
+syntax = "proto3";
+package keyvalue;
+option go_package = "github.com/mailstepcz/keyvalue/test";
+
+enum PhoneType {
+    PHONE_TYPE_UNKNOWN = 0;
+    PHONE_TYPE_MOBILE = 1;
+    PHONE_TYPE_HARD_LINE = 2;
+    PHONE_TYPE_SATELITE = 3;
+}
