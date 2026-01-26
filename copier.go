@@ -211,7 +211,7 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 			x := (*string)(src)
 			ev := enumValues.ByName(protoreflect.Name(*x))
 			if ev == nil {
-				return serr.New("invalid enum value, value is not present in proto enum", serr.String("givenValue", *x))
+				return serr.New("invalid enum value, value is not present in proto enum", serr.String("givenStringValue", *x))
 			}
 
 			y := (*int32)(dst)
@@ -232,7 +232,7 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 			x := (*protoreflect.EnumNumber)(src)
 			ev := enumValues.ByNumber(*x)
 			if ev == nil {
-				return serr.New("invalid enum value, int value is not present in proto enum", serr.Int("givenValue", int(*x)))
+				return serr.New("invalid enum value, int value is not present in proto enum", serr.Int("givenIntValue", int(*x)))
 			}
 			name := string(ev.Name())
 			if err := validator(name); err != nil {
@@ -248,7 +248,7 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 			x := (*protoreflect.EnumNumber)(src)
 			ev := enumValues.ByNumber(*x)
 			if ev == nil {
-				return serr.New("invalid enum value, int value is not present in proto enum", serr.Int("givenValue", int(*x)))
+				return serr.New("invalid enum value, int value is not present in proto enum", serr.Int("givenIntValue", int(*x)))
 			}
 			y := (*string)(dst)
 			*y = string(ev.Name())
