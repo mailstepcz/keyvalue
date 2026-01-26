@@ -1589,7 +1589,7 @@ func TestProtoEnums(t *testing.T) {
 
 			_, err := copy.CopyPtr(&s)
 			req.Error(err)
-			req.Contains(err.Error(), "invalid enum value, value is not present in proto enum givenValue=INVALID_VALUE")
+			req.Contains(err.Error(), "invalid enum value, value is not present in proto enum givenStringValue=INVALID_VALUE")
 		})
 
 		t.Run("proto enum value out of range (phone2) to string  - should fail, value cannot be converted to string", func(t *testing.T) {
@@ -1607,7 +1607,7 @@ func TestProtoEnums(t *testing.T) {
 
 			_, err := copy.CopyPtr(&s)
 			req.Error(err)
-			req.Contains(err.Error(), "invalid enum value, int value is not present in proto enum givenValue=420")
+			req.Contains(err.Error(), "invalid enum value, int value is not present in proto enum givenIntValue=420")
 		})
 
 		t.Run("invalid closed enum value to proto enum (phone3)", func(t *testing.T) {
@@ -1625,7 +1625,7 @@ func TestProtoEnums(t *testing.T) {
 
 			_, err := copy.CopyPtr(&s)
 			req.Error(err)
-			req.Contains(err.Error(), "invalid enum value, value is not present in proto enum givenValue=INVALID_VALUE")
+			req.Contains(err.Error(), "invalid enum value, value is not present in proto enum givenStringValue=INVALID_VALUE")
 		})
 
 		t.Run("proto enum value not present in closed enum (phone 4)", func(t *testing.T) {
