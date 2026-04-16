@@ -1105,6 +1105,49 @@ func TestValConv(t *testing.T) {
 		req.Equal([]alias{12, 34, 56}, dst)
 	})
 
+	t.Run("[]int -> []int (nil)", func(t *testing.T) {
+		req := require.New(t)
+
+		var (
+			dst []int
+			src []int
+		)
+		f, err := valConv(reflect.TypeOf(dst), reflect.TypeOf(src))
+		req.NoError(err)
+		err = f(unsafe.Pointer(&dst), unsafe.Pointer(&src))
+		req.NoError(err)
+		req.Nil(dst)
+	})
+
+	t.Run("[]int -> []int (empty)", func(t *testing.T) {
+		req := require.New(t)
+
+		var (
+			dst []int
+			src = []int{}
+		)
+		f, err := valConv(reflect.TypeOf(dst), reflect.TypeOf(src))
+		req.NoError(err)
+		err = f(unsafe.Pointer(&dst), unsafe.Pointer(&src))
+		req.NoError(err)
+		req.NotNil(dst)
+		req.Empty(dst)
+	})
+
+	t.Run("[]int32 -> []int64", func(t *testing.T) {
+		req := require.New(t)
+
+		var (
+			dst []int64
+			src = []int32{12, 34, 56}
+		)
+		f, err := valConv(reflect.TypeOf(dst), reflect.TypeOf(src))
+		req.NoError(err)
+		err = f(unsafe.Pointer(&dst), unsafe.Pointer(&src))
+		req.NoError(err)
+		req.Equal([]int64{12, 34, 56}, dst)
+	})
+
 	t.Run("*int -> Maybe[int]", func(t *testing.T) {
 		req := require.New(t)
 
