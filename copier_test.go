@@ -1038,7 +1038,7 @@ func TestValConv(t *testing.T) {
 
 		var (
 			dst int
-			src int = 1234
+			src = 1234
 		)
 		f, err := valConv(reflect.TypeOf(dst), reflect.TypeOf(src))
 		req.NoError(err)
@@ -1052,7 +1052,7 @@ func TestValConv(t *testing.T) {
 
 		var (
 			dst *int
-			src *int = pointer.To(1234)
+			src = pointer.To(1234)
 		)
 		f, err := valConv(reflect.TypeOf(dst), reflect.TypeOf(src))
 		req.NoError(err)
@@ -1067,7 +1067,7 @@ func TestValConv(t *testing.T) {
 		type alias int
 		var (
 			dst alias
-			src int = 1234
+			src = 1234
 		)
 		f, err := valConv(reflect.TypeOf(dst), reflect.TypeOf(src))
 		req.NoError(err)
@@ -1103,6 +1103,49 @@ func TestValConv(t *testing.T) {
 		err = f(unsafe.Pointer(&dst), unsafe.Pointer(&src))
 		req.NoError(err)
 		req.Equal([]alias{12, 34, 56}, dst)
+	})
+
+	t.Run("[]int -> []int (nil)", func(t *testing.T) {
+		req := require.New(t)
+
+		var (
+			dst []int
+			src []int
+		)
+		f, err := valConv(reflect.TypeOf(dst), reflect.TypeOf(src))
+		req.NoError(err)
+		err = f(unsafe.Pointer(&dst), unsafe.Pointer(&src))
+		req.NoError(err)
+		req.Nil(dst)
+	})
+
+	t.Run("[]int -> []int (empty)", func(t *testing.T) {
+		req := require.New(t)
+
+		var (
+			dst []int
+			src = []int{}
+		)
+		f, err := valConv(reflect.TypeOf(dst), reflect.TypeOf(src))
+		req.NoError(err)
+		err = f(unsafe.Pointer(&dst), unsafe.Pointer(&src))
+		req.NoError(err)
+		req.NotNil(dst)
+		req.Empty(dst)
+	})
+
+	t.Run("[]int32 -> []int64", func(t *testing.T) {
+		req := require.New(t)
+
+		var (
+			dst []int64
+			src = []int32{12, 34, 56}
+		)
+		f, err := valConv(reflect.TypeOf(dst), reflect.TypeOf(src))
+		req.NoError(err)
+		err = f(unsafe.Pointer(&dst), unsafe.Pointer(&src))
+		req.NoError(err)
+		req.Equal([]int64{12, 34, 56}, dst)
 	})
 
 	t.Run("*int -> Maybe[int]", func(t *testing.T) {
@@ -1167,7 +1210,7 @@ func TestValConv(t *testing.T) {
 		u := ulid.Make()
 		var (
 			dst maybe.Maybe[ulid.ULID]
-			src *string = pointer.To(u.String())
+			src = pointer.To(u.String())
 		)
 		f, err := valConv(reflect.TypeOf(dst), reflect.TypeOf(src))
 		req.NoError(err)
@@ -1181,7 +1224,7 @@ func TestValConv(t *testing.T) {
 
 		var (
 			dst maybe.Maybe[decimal.Decimal]
-			src *string = pointer.To("1234")
+			src = pointer.To("1234")
 		)
 		f, err := valConv(reflect.TypeOf(dst), reflect.TypeOf(src))
 		req.NoError(err)

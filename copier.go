@@ -452,14 +452,14 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 			}
 			len := srcSlice.Len()
 			dstSlice := reflect.MakeSlice(dstType, len, len)
-			srcPtr := srcSlice.UnsafePointer()
-			dstPtr := dstSlice.UnsafePointer()
+			srcBase := srcSlice.UnsafePointer()
+			dstBase := dstSlice.UnsafePointer()
 			for i := 0; i < len; i++ {
+				dstPtr := unsafe.Add(dstBase, uintptr(i)*dstElSize)
+				srcPtr := unsafe.Add(srcBase, uintptr(i)*srcElSize)
 				if err := elConv(dstPtr, srcPtr); err != nil {
 					return err
 				}
-				dstPtr = unsafe.Add(dstPtr, dstElSize)
-				srcPtr = unsafe.Add(srcPtr, srcElSize)
 			}
 			reflect.NewAt(dstType, dst).Elem().Set(dstSlice)
 			return nil
