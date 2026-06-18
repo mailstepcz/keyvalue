@@ -36,8 +36,6 @@ var (
 	ErrFieldNotFound = errors.New("field not found")
 	// ErrUnsupportedTypePair signifies incompatible type pair.
 	ErrUnsupportedTypePair = errors.New("unsupported pair")
-	// ErrPointerNotSupportedInDestinationSlice signifies that a pointer in the slice would clash with the GC.
-	ErrPointerNotSupportedInDestinationSlice = errors.New("dangerous pointer in slice")
 
 	copiers  = make(map[copierTypePair]func(unsafe.Pointer, unsafe.Pointer) error)
 	cacheMtx sync.RWMutex
@@ -135,6 +133,32 @@ func memcopy(dst, src unsafe.Pointer, size uintptr) {
 	}
 }
 
+// typeHasPointers reports whether values of t contain any pointer the GC tracks.
+// Raw byte copies (memcopy / copy over unsafe.Slice) of such values skip the GC
+// write barrier and corrupt the heap under concurrent GC; those must go through a
+// barriered reflect assignment instead. Pointer-free values stay on the fast path.
+func typeHasPointers(t reflect.Type) bool {
+	switch t.Kind() {
+	case reflect.Bool,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+		reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128:
+		return false
+	case reflect.Array:
+		return t.Len() > 0 && typeHasPointers(t.Elem())
+	case reflect.Struct:
+		for i := 0; i < t.NumField(); i++ {
+			if typeHasPointers(t.Field(i).Type) {
+				return true
+			}
+		}
+		return false
+	default:
+		// Pointer, String, Slice, Map, Chan, Func, Interface, UnsafePointer
+		return true
+	}
+}
+
 // ValueCopier returns a copier for values of any type (provided the pair of types is supported).
 func ValueCopier[D, S any]() (func(*D, *S) error, error) {
 	c, err := valConv(reflect.TypeFor[D](), reflect.TypeFor[S]())
@@ -181,6 +205,12 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 	srcPtrType := reflect.PointerTo(srcType)
 	switch {
 	case dstType == srcType:
+		if typeHasPointers(dstType) {
+			return func(dst, src unsafe.Pointer) error {
+				reflect.NewAt(dstType, dst).Elem().Set(reflect.NewAt(srcType, src).Elem())
+				return nil
+			}, nil
+		}
 		size := dstType.Size()
 		return func(dst, src unsafe.Pointer) error {
 			memcopy(dst, src, size)
@@ -255,6 +285,13 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 			return nil
 		}, nil
 	case srcPtrType.ConvertibleTo(dstPtrType):
+		if typeHasPointers(dstType) {
+			return func(dst, src unsafe.Pointer) error {
+				converted := reflect.NewAt(srcType, src).Convert(dstPtrType)
+				reflect.NewAt(dstType, dst).Elem().Set(converted.Elem())
+				return nil
+			}, nil
+		}
 		return func(dst, src unsafe.Pointer) error {
 			converted := reflect.NewAt(srcType, src).Convert(dstPtrType)
 			copy(unsafe.Slice((*byte)(dst), dstType.Size()), unsafe.Slice((*byte)(converted.UnsafePointer()), dstType.Size()))
@@ -262,9 +299,10 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 		}, nil
 
 	case srcType.ConvertibleTo(dstType):
+		hasPtr := typeHasPointers(dstType)
 		return func(dst, src unsafe.Pointer) error {
 			converted := reflect.NewAt(srcType, src).Elem().Convert(dstType)
-			if converted.CanAddr() {
+			if converted.CanAddr() && !hasPtr {
 				copy(unsafe.Slice((*byte)(dst), dstType.Size()), unsafe.Slice((*byte)(converted.Addr().UnsafePointer()), dstType.Size()))
 			} else {
 				reflect.NewAt(dstType, dst).Elem().Set(converted)
@@ -405,8 +443,13 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 			return nil, serr.New("can't copy", serr.String("srcType", srcType.Name()), serr.String("dstType", dstType.Name()))
 		}
 		dstSize := dstType.Size()
+		hasPtr := typeHasPointers(dstType)
 		return func(dst, src unsafe.Pointer) error {
 			ptr := reflect.NewAt(srcType.Elem(), *(*unsafe.Pointer)(src)).Interface().(iface.Copiable).Copy(dstType)
+			if hasPtr {
+				reflect.NewAt(dstType, dst).Elem().Set(reflect.NewAt(dstType, ptr).Elem())
+				return nil
+			}
 			copy(
 				unsafe.Slice((*byte)(dst), dstSize),
 				unsafe.Slice((*byte)(ptr), dstSize),
@@ -572,7 +615,14 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 		return func(dst, src unsafe.Pointer) error {
 			v := reflect.New(dstType.Elem())
 			if err := conv(v.UnsafePointer(), src); err != nil {
-				return nil
+				// A zero-valued source that cannot be represented in the
+				// destination element type (e.g. an empty string converted
+				// to a UUID) leaves the destination pointer nil. A non-zero
+				// source that fails to convert is a genuine error.
+				if reflect.NewAt(srcType, src).Elem().IsZero() {
+					return nil
+				}
+				return err
 			}
 			*(*unsafe.Pointer)(dst) = v.UnsafePointer()
 			return nil

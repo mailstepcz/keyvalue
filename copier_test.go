@@ -1304,6 +1304,54 @@ func TestValConv(t *testing.T) {
 		req.Equal(tm.UTC(), dst.X.AsTime().UTC())
 		req.Equal(u, dst.Y)
 	})
+
+	t.Run("string -> *UUID", func(t *testing.T) {
+		req := require.New(t)
+
+		u := uuid.New()
+		var (
+			dst *uuid.UUID
+			src = u.String()
+		)
+		f, err := valConv(reflect.TypeFor[*uuid.UUID](), reflect.TypeFor[string]())
+		req.NoError(err)
+		err = f(unsafe.Pointer(&dst), unsafe.Pointer(&src))
+		req.NoError(err)
+		req.NotNil(dst)
+		req.Equal(u, *dst)
+	})
+
+	t.Run("string -> *UUID (empty source yields nil pointer)", func(t *testing.T) {
+		req := require.New(t)
+
+		var (
+			dst *uuid.UUID
+			src = ""
+		)
+		f, err := valConv(reflect.TypeFor[*uuid.UUID](), reflect.TypeFor[string]())
+		req.NoError(err)
+		// An empty (zero-valued) source cannot be represented as a UUID;
+		// the destination pointer is left nil and no error is returned.
+		err = f(unsafe.Pointer(&dst), unsafe.Pointer(&src))
+		req.NoError(err)
+		req.Nil(dst)
+	})
+
+	t.Run("string -> *UUID (malformed non-empty source errors)", func(t *testing.T) {
+		req := require.New(t)
+
+		var (
+			dst *uuid.UUID
+			src = "not-a-uuid"
+		)
+		f, err := valConv(reflect.TypeFor[*uuid.UUID](), reflect.TypeFor[string]())
+		req.NoError(err)
+		// A non-zero source that fails to convert is a genuine error and
+		// must not be silently swallowed.
+		err = f(unsafe.Pointer(&dst), unsafe.Pointer(&src))
+		req.Error(err)
+		req.Nil(dst)
+	})
 }
 
 func TestSliceCopier(t *testing.T) {
