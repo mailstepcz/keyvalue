@@ -36,8 +36,6 @@ var (
 	ErrFieldNotFound = errors.New("field not found")
 	// ErrUnsupportedTypePair signifies incompatible type pair.
 	ErrUnsupportedTypePair = errors.New("unsupported pair")
-	// ErrPointerNotSupportedInDestinationSlice signifies that a pointer in the slice would clash with the GC.
-	ErrPointerNotSupportedInDestinationSlice = errors.New("dangerous pointer in slice")
 
 	copiers  = make(map[copierTypePair]func(unsafe.Pointer, unsafe.Pointer) error)
 	cacheMtx sync.RWMutex
@@ -617,7 +615,14 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 		return func(dst, src unsafe.Pointer) error {
 			v := reflect.New(dstType.Elem())
 			if err := conv(v.UnsafePointer(), src); err != nil {
-				return nil
+				// A zero-valued source that cannot be represented in the
+				// destination element type (e.g. an empty string converted
+				// to a UUID) leaves the destination pointer nil. A non-zero
+				// source that fails to convert is a genuine error.
+				if reflect.NewAt(srcType, src).Elem().IsZero() {
+					return nil
+				}
+				return err
 			}
 			*(*unsafe.Pointer)(dst) = v.UnsafePointer()
 			return nil
