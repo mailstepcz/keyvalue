@@ -1,6 +1,6 @@
 module github.com/mailstepcz/keyvalue
 
-go 1.24
+go 1.27.1
 
 toolchain go1.24.2
 

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 	"unsafe"
+	stduuid "uuid"
 
 	"github.com/google/uuid"
 	"github.com/mailstepcz/enums"
@@ -356,6 +357,13 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 			return nil
 		}, nil
 
+	case srcType == types.StdUUID && dstType == types.String:
+		return func(dst, src unsafe.Pointer) error {
+			x := (*stduuid.UUID)(src)
+			*(*string)(dst) = x.String()
+			return nil
+		}, nil
+
 	case srcType == types.TimestampPtr && dstType == types.Date:
 		return func(dst, src unsafe.Pointer) error {
 			if ts := *(**timestamppb.Timestamp)(src); ts.IsValid() {
@@ -379,6 +387,17 @@ func valConv(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.Pointer
 				return err
 			}
 			*(*uuid.UUID)(dst) = u
+			return nil
+		}, nil
+
+	case dstType == types.StdUUID && srcType == types.String:
+		return func(dst, src unsafe.Pointer) error {
+			x := *(*string)(src)
+			u, err := stduuid.Parse(x)
+			if err != nil {
+				return err
+			}
+			*(*stduuid.UUID)(dst) = u
 			return nil
 		}, nil
 

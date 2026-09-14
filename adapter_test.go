@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"testing"
 	"time"
+	stduuid "uuid"
 
 	"github.com/google/uuid"
 	"github.com/mailstepcz/maybe"
@@ -213,6 +214,66 @@ func TestStructToPBMapAdapters(t *testing.T) {
 	req.Equal(s1.U1.String(), m["U1"])
 	req.Equal(s1.U2, m["U2"])
 	req.Equal(s1.X1[1], m["X1"].([]interface{})[1])
+}
+
+type stdUUIDAdapterSrc struct {
+	U1 stduuid.UUID
+	U2 string
+}
+
+type stdUUIDAdapterDst struct {
+	U1 string
+	U2 stduuid.UUID
+}
+
+func TestStdUUIDStructToPBMapAdapters(t *testing.T) {
+	req := require.New(t)
+	u := stduuid.NewV7()
+	src := stdUUIDAdapterSrc{U1: u, U2: u.String()}
+	dst, err := structpb.NewStruct(nil)
+	req.Nil(err)
+	err = CopyV1(dst, &src)
+	req.Nil(err)
+	m := dst.AsMap()
+	req.Equal(u.String(), m["U1"])
+	req.Equal(u.String(), m["U2"])
+}
+
+func TestStdUUIDPBMapToStructAdapters(t *testing.T) {
+	req := require.New(t)
+	u := stduuid.NewV7()
+	src, err := structpb.NewStruct(map[string]interface{}{
+		"U1": u.String(),
+		"U2": u.String(),
+	})
+	req.Nil(err)
+	var dst stdUUIDAdapterDst
+	err = CopyV1(&dst, src)
+	req.Nil(err)
+	req.Equal(u.String(), dst.U1)
+	req.Equal(u, dst.U2)
+}
+
+func TestStdUUIDMapToStructAdaptersEmptyString(t *testing.T) {
+	req := require.New(t)
+	m := map[string]interface{}{
+		"U1": "",
+		"U2": "",
+	}
+	var dst stdUUIDAdapterDst
+	err := CopyV1(&dst, m)
+	req.Nil(err)
+	req.Equal(stduuid.Nil(), dst.U2)
+}
+
+func TestStdUUIDMapToStructAdaptersFailure(t *testing.T) {
+	req := require.New(t)
+	m := map[string]interface{}{
+		"U1": "abcd",
+		"U2": "not-a-uuid",
+	}
+	var dst stdUUIDAdapterDst
+	req.Error(CopyV1(&dst, m))
 }
 
 type custSrc struct {
