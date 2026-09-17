@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"time"
+	stduuid "uuid"
 
 	"github.com/google/uuid"
 	"github.com/mailstepcz/types"
@@ -120,6 +121,16 @@ func destValue(t reflect.Type, v reflect.Value, builder func() interface{}, cust
 			return nil, err
 		}
 		return u, nil
+	case t == types.StdUUID && v.Type() == types.String:
+		s := v.Interface().(string)
+		if s == "" {
+			return stduuid.Nil(), nil
+		}
+		u, err := stduuid.Parse(s)
+		if err != nil {
+			return nil, err
+		}
+		return u, nil
 	case t == types.UUID && v.Type() == types.NullUUID:
 		var u uuid.UUID
 		if v := v.Interface().(uuid.NullUUID); v.Valid {
@@ -174,6 +185,8 @@ func destValue(t reflect.Type, v reflect.Value, builder func() interface{}, cust
 		return t, nil
 	case t == types.String && v.Type() == types.UUID:
 		return v.Interface().(uuid.UUID).String(), nil
+	case t == types.String && v.Type() == types.StdUUID:
+		return v.Interface().(stduuid.UUID).String(), nil
 	case t == types.TimestampPtr && v.Type() == types.Time:
 		return timestamppb.New(v.Interface().(time.Time)), nil
 	case t == types.Time && v.Type() == types.TimestampPtr:

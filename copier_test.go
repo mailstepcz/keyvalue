@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 	"unsafe"
+	stduuid "uuid"
 
 	"github.com/google/uuid"
 	"github.com/mailstepcz/enums"
@@ -919,6 +920,54 @@ func TestUlidCopy(t *testing.T) {
 	req.Nil(dst.ULID4)
 	req.Equal(ulid5, dst.ULID5.Val.String())
 	req.False(dst.ULID6.Valid)
+}
+
+type stdUUIDSrc struct {
+	UUID1 stduuid.UUID
+	UUID2 string
+	UUID3 maybe.Maybe[stduuid.UUID]
+	UUID4 maybe.Maybe[stduuid.UUID]
+	UUID5 *string
+	UUID6 *string
+}
+
+type stdUUIDDst struct {
+	UUID1 string
+	UUID2 stduuid.UUID
+	UUID3 *string
+	UUID4 *string
+	UUID5 maybe.Maybe[stduuid.UUID]
+	UUID6 maybe.Maybe[stduuid.UUID]
+}
+
+func TestStdUUIDCopy(t *testing.T) {
+	req := require.New(t)
+	uuid5 := stduuid.NewV7().String()
+	src := stdUUIDSrc{
+		UUID1: stduuid.NewV7(),
+		UUID2: stduuid.NewV7().String(),
+		UUID3: maybe.Unit(stduuid.NewV7()),
+		UUID4: maybe.Nothing[stduuid.UUID](),
+		UUID5: &uuid5,
+		UUID6: nil,
+	}
+	var dst stdUUIDDst
+	err := Copy(&dst, &src)
+	req.NoError(err)
+
+	req.Equal(src.UUID1.String(), dst.UUID1)
+	req.Equal(src.UUID2, dst.UUID2.String())
+	req.Equal(src.UUID3.Val.String(), *dst.UUID3)
+	req.Nil(dst.UUID4)
+	req.Equal(uuid5, dst.UUID5.Val.String())
+	req.False(dst.UUID6.Valid)
+}
+
+func TestStdUUIDCopyFailure(t *testing.T) {
+	req := require.New(t)
+	src := struct{ UUID1 string }{UUID1: "not-a-uuid"}
+	var dst struct{ UUID1 stduuid.UUID }
+	req.Error(Copy(&dst, &src))
 }
 
 func TestCopierCreationErrFieldNotInDestination(t *testing.T) {

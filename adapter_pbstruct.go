@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"time"
+	stduuid "uuid"
 
 	"github.com/google/uuid"
 	"github.com/mailstepcz/types"
@@ -53,6 +54,8 @@ func (a *PBStructAdapter) Set(name string, value interface{}) error {
 	case *timestamppb.Timestamp:
 		a.s.Fields[name] = structpb.NewStringValue(v.AsTime().Format(time.RFC3339))
 	case uuid.UUID:
+		a.s.Fields[name] = structpb.NewStringValue(v.String())
+	case stduuid.UUID:
 		a.s.Fields[name] = structpb.NewStringValue(v.String())
 	case []string:
 		converted := make([]interface{}, len(v))
