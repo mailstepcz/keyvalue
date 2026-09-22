@@ -30,7 +30,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/mailstepcz/datastructures v0.1.12 // indirect
-	github.com/mailstepcz/go-utils v0.1.48 // indirect
+	github.com/mailstepcz/go-utils v0.1.49-0.20260922083532-ccd71d497561 // indirect
 	github.com/rickb777/period v1.1.0 // indirect
 	github.com/rickb777/plural/v2 v2.1.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
