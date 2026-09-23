@@ -21,8 +21,8 @@ github.com/mailstepcz/datastructures v0.1.12 h1:U5je2MGpjm0MT9HYVn5VGV/at1Nur82/
 github.com/mailstepcz/datastructures v0.1.12/go.mod h1:C2GHpbcoWtBmSx4cDyRliiHs+9NfHCa3u8VoQbiNUPQ=
 github.com/mailstepcz/enums v0.1.3 h1:+slUk+IJWSJZjreB/lEjJFOg5I2E0fjKOB1uNFJ4Xqo=
 github.com/mailstepcz/enums v0.1.3/go.mod h1:3dIwGCEK+7Tb0pJtfWNZrbm1EMgq5Y9ru6I6uC5BkR8=
-github.com/mailstepcz/go-utils v0.1.49-0.20260922083532-ccd71d497561 h1:dCaXEeqTP8+WlxQvhC8+8/A4hQSSMZncfe8iqnmk/Oo=
-github.com/mailstepcz/go-utils v0.1.49-0.20260922083532-ccd71d497561/go.mod h1:wMkjXQHRLwsBKBik7szm7uKhsbXQmgOYR00GnMW6aLU=
+github.com/mailstepcz/go-utils v0.1.49 h1:fKmIJF7NEA2NOCZfUVKwEg2qvVmmMIyMRtdXepbCfB4=
+github.com/mailstepcz/go-utils v0.1.49/go.mod h1:wMkjXQHRLwsBKBik7szm7uKhsbXQmgOYR00GnMW6aLU=
 github.com/mailstepcz/maybe v0.1.1 h1:8gRJBHVin54pxKb3phHRwSTkL8maz4uuJwvyLj774Uo=
 github.com/mailstepcz/maybe v0.1.1/go.mod h1:jYa5xYUC9pKgpt0XkMUZ5A0tXcfKLrxZEAU7nGUrSz8=
 github.com/mailstepcz/must v0.1.0 h1:dea/gwwxMFocl5IWv+/ajJwyAGXre4P97ZMiQ8xQm8E=
