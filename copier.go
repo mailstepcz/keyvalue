@@ -63,16 +63,19 @@ func CopierForPair(dstType, srcType reflect.Type) (func(unsafe.Pointer, unsafe.P
 }
 
 // CopierForPairWithOptions creates a copier for a pair of structs with custom options.
+// Only a copier without options is cached, since the options change which fields a copier of the pair copies.
 func CopierForPairWithOptions(dstType, srcType reflect.Type, opts *CopierOptions) (func(unsafe.Pointer, unsafe.Pointer) error, error) {
 	key := copierTypePair{
 		dst: dstType,
 		src: srcType,
 	}
-	cacheMtx.RLock()
-	copier, ok := copiers[key]
-	cacheMtx.RUnlock()
-	if ok {
-		return copier, nil
+	if opts == nil {
+		cacheMtx.RLock()
+		copier, ok := copiers[key]
+		cacheMtx.RUnlock()
+		if ok {
+			return copier, nil
+		}
 	}
 	if dstType.Kind() != reflect.Struct || srcType.Kind() != reflect.Struct {
 		return nil, ErrTypeNotStruct
@@ -107,13 +110,16 @@ func CopierForPairWithOptions(dstType, srcType reflect.Type, opts *CopierOptions
 		fieldCopiers = append(fieldCopiers, fc)
 	}
 	fieldCopiers = slices.Clip(fieldCopiers)
-	copier = func(dst, src unsafe.Pointer) error {
+	copier := func(dst, src unsafe.Pointer) error {
 		for _, fc := range fieldCopiers {
 			if err := fc(dst, src); err != nil {
 				return err
 			}
 		}
 		return nil
+	}
+	if opts != nil {
+		return copier, nil
 	}
 	cacheMtx.Lock()
 	defer cacheMtx.Unlock()
@@ -781,6 +787,22 @@ func NewerCopy[T, U any](dst *T, src *U) error {
 // TypedCopierForPair creates a typed copier for a pair of structs.
 func TypedCopierForPair[D, S any]() (func(*D, *S) error, error) {
 	c, err := CopierForPairWithOptions(reflect.TypeFor[D](), reflect.TypeFor[S](), nil)
+	if err != nil {
+		return nil, err
+	}
+	return func(dst *D, src *S) error {
+		return c(unsafe.Pointer(dst), unsafe.Pointer(src))
+	}, nil
+}
+
+// TypedCopierForPairOmitting creates a typed copier for a pair of structs that ignores the named source fields.
+// Every other source field must still have a destination field, as with [TypedCopierForPair].
+func TypedCopierForPairOmitting[D, S any](fieldsToOmit ...string) (func(*D, *S) error, error) {
+	c, err := CopierForPairWithOptions(reflect.TypeFor[D](), reflect.TypeFor[S](), &CopierOptions{
+		OmitNotFound: false,
+		FieldsToCopy: nil,
+		FieldsToOmit: fieldsToOmit,
+	})
 	if err != nil {
 		return nil, err
 	}

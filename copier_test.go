@@ -1031,6 +1031,55 @@ func TestCopierCreationFieldsToOmitSuccess(t *testing.T) {
 	req.Equal("text", dst.S)
 }
 
+func TestTypedCopierForPairOmitting(t *testing.T) {
+	t.Run("omitted field is not copied", func(t *testing.T) {
+		req := require.New(t)
+
+		copier, err := TypedCopierForPairOmitting[copierDst2, copierSrc4]("X")
+		req.NoError(err)
+
+		var dst copierDst2
+		req.NoError(copier(&dst, &copierSrc4{N: 1234, S: "text", X: 12.34}))
+		req.Equal(copierDst2{N: 1234, S: "text"}, dst)
+	})
+
+	t.Run("field neither omitted nor in the destination - should fail", func(t *testing.T) {
+		req := require.New(t)
+
+		_, err := TypedCopierForPairOmitting[copierDst2, copierSrc4]("N")
+		req.ErrorIs(err, ErrFieldNotFound)
+	})
+
+	t.Run("omitting copier does not replace the strict one of the pair - should fail", func(t *testing.T) {
+		req := require.New(t)
+
+		_, err := TypedCopierForPairOmitting[copierDst2, copierSrc4]("X")
+		req.NoError(err)
+
+		_, err = TypedCopierForPair[copierDst2, copierSrc4]()
+		req.ErrorIs(err, ErrFieldNotFound)
+	})
+
+	t.Run("omit lists of one pair do not share a copier", func(t *testing.T) {
+		req := require.New(t)
+
+		withoutX, err := TypedCopierForPairOmitting[copierDst2, copierSrc4]("X")
+		req.NoError(err)
+		withoutXAndS, err := TypedCopierForPairOmitting[copierDst2, copierSrc4]("X", "S")
+		req.NoError(err)
+
+		src := copierSrc4{N: 1234, S: "text", X: 12.34}
+
+		var dst copierDst2
+		req.NoError(withoutX(&dst, &src))
+		req.Equal(copierDst2{N: 1234, S: "text"}, dst)
+
+		dst = copierDst2{}
+		req.NoError(withoutXAndS(&dst, &src))
+		req.Equal(copierDst2{N: 1234}, dst)
+	})
+}
+
 func TestCopierCreationFieldsToCopySuccess(t *testing.T) {
 	req := require.New(t)
 
